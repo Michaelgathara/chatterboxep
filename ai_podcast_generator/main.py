@@ -27,84 +27,75 @@ def generate_podcast_content(topic, duration_minutes, host1_name, host2_name):
     )
     return response.choices[0].message.content.strip()
 
+def parse_content(content, host1_name, host2_name):
+    lines = content.split('\n')
+    parsed_lines = []
+    for line in lines:
+        if line.startswith(f"{host1_name}:") or line.startswith(f"{host2_name}:"):
+            speaker, text = line.split(':', 1)
+            parsed_lines.append((speaker.strip(), text.strip()))
+    return parsed_lines
+
 def text_to_speech(text, output_file, voice):
     response = client.audio.speech.create(
         model="tts-1",
         voice=voice,
         input=text
     )
-    response.stream_to_file(output_file)
+    with open(output_file, 'wb') as f:
+        for chunk in response.iter_bytes():
+            f.write(chunk)
 
-def combine_audio_files(file_list, output_file):
-    combined = AudioSegment.empty()
-    for file in file_list:
-        audio = AudioSegment.from_mp3(file)
-        combined += audio
-    combined.export(output_file, format="mp3")
+def analyze_audio(file_path):
+    audio = AudioSegment.from_mp3(file_path)
+    duration = len(audio)
+    # Implement silence detection and trimming if needed
+    return audio, duration
 
-def add_intro_outro(audio_file, intro_file, outro_file):
-    podcast = AudioSegment.from_mp3(audio_file)
-    intro = AudioSegment.from_mp3(intro_file)
-    outro = AudioSegment.from_mp3(outro_file)
-    
-    final_podcast = intro + podcast + outro
-    return final_podcast
+def add_pause(audio, pause_duration=500):  # 500ms pause
+    return audio + AudioSegment.silent(duration=pause_duration)
+
+def combine_audio_files(audio_segments):
+    return sum(audio_segments, AudioSegment.empty())
+
+def verify_voices(audio_files):
+    host1_duration = sum(len(audio) for audio, host in audio_files if host == HOST_1_NAME)
+    host2_duration = sum(len(audio) for audio, host in audio_files if host == HOST_2_NAME)
+    total_duration = host1_duration + host2_duration
+    host1_percentage = (host1_duration / total_duration) * 100
+    host2_percentage = (host2_duration / total_duration) * 100
+    print(f"{HOST_1_NAME} speaks for {host1_percentage:.2f}% of the time")
+    print(f"{HOST_2_NAME} speaks for {host2_percentage:.2f}% of the time")
+    return abs(host1_percentage - host2_percentage) < 20  # Allow 20% difference
 
 def generate_episode():
     topic = random.choice(PODCAST_TOPICS)
     content = generate_podcast_content(topic, EPISODE_DURATION_MINUTES, HOST_1_NAME, HOST_2_NAME)
+    parsed_lines = parse_content(content, HOST_1_NAME, HOST_2_NAME)
 
-    print(f"Generated content for topic: {topic}")
-    print(content)
+    audio_files = []
+    for i, (speaker, text) in enumerate(parsed_lines):
+        output_file = f"temp_audio_{i}.mp3"
+        voice = "nova" if speaker == HOST_1_NAME else "echo"
+        text_to_speech(text, output_file, voice)
+        audio, duration = analyze_audio(output_file)
+        audio_files.append((add_pause(audio), speaker))
+        os.remove(output_file)
 
+    if not verify_voices(audio_files):
+        print("Voice distribution is uneven. Regenerating content...")
+        return generate_episode()  # Recursively try again
+
+    final_audio = combine_audio_files([audio for audio, _ in audio_files])
     
-    temp_folder = "temp_audio"
-    os.makedirs(temp_folder, exist_ok=True)
+    if os.path.exists("intro.mp3") and os.path.exists("outro.mp3"):
+        intro = AudioSegment.from_mp3("intro.mp3")
+        outro = AudioSegment.from_mp3("outro.mp3")
+        final_audio = intro + final_audio + outro
 
-    try:
-        
-        lines = content.split('\n')
-        audio_files = []
-
-        for i, line in enumerate(lines):
-            if ':' in line:
-                host, text = line.split(':', 1)
-                host = host.strip()
-                text = text.strip()
-
-                if text:  
-                    output_file = os.path.join(temp_folder, f"audio_{i}.mp3")
-                    voice = "nova" if host == HOST_1_NAME else "echo"
-                    text_to_speech(text, output_file, voice)
-                    audio_files.append(output_file)
-
-        
-        combined_file = os.path.join(temp_folder, "combined_audio.mp3")
-        combine_audio_files(audio_files, combined_file)
-
-        
-        if os.path.exists("intro.mp3") and os.path.exists("outro.mp3"):
-            final_podcast = add_intro_outro(combined_file, "intro.mp3", "outro.mp3")
-        else:
-            print("Warning: intro.mp3 or outro.mp3 not found. Skipping intro/outro addition.")
-            final_podcast = AudioSegment.from_mp3(combined_file)
-
-        
-        output_filename = f"AI_Podcast_Episode_{topic.replace(' ', '_')}.mp3"
-        final_podcast.export(output_filename, format="mp3")
-
-        print(f"Podcast episode generated and saved as {output_filename}")
-
-    except Exception as e:
-        print(f"An error occurred while generating the podcast: {str(e)}")
-        # Optionally, save the generated text content in case of audio generation failure
-        with open(f"AI_Podcast_Episode_{topic.replace(' ', '_')}.txt", "w") as f:
-            f.write(content)
-        print(f"Podcast content saved as text in AI_Podcast_Episode_{topic.replace(' ', '_')}.txt")
-
-    finally:
-        # Clean up: remove the temporary folder and its contents
-        shutil.rmtree(temp_folder, ignore_errors=True)
+    output_filename = f"AI_Podcast_Episode_{topic.replace(' ', '_')}.mp3"
+    final_audio.export(output_filename, format="mp3")
+    print(f"Podcast episode generated and saved as {output_filename}")
 
 if __name__ == "__main__":
     generate_episode()

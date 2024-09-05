@@ -30,10 +30,24 @@ def generate_podcast_content(topic, duration_minutes, host1_name, host2_name):
 def parse_content(content, host1_name, host2_name):
     lines = content.split('\n')
     parsed_lines = []
+    current_speaker = None
+    current_text = []
+
     for line in lines:
+        print(f"Host 1: {host1_name}")
+        print(f"Host 2: {host2_name}")
         if line.startswith(f"{host1_name}:") or line.startswith(f"{host2_name}:"):
-            speaker, text = line.split(':', 1)
-            parsed_lines.append((speaker.strip(), text.strip()))
+            if current_speaker and current_text:
+                parsed_lines.append((current_speaker, ' '.join(current_text).strip()))
+                current_text = []
+            current_speaker = line.split(':', 1)[0].strip()
+            current_text.append(line.split(':', 1)[1].strip())
+        elif current_speaker:
+            current_text.append(line.strip())
+
+    if current_speaker and current_text:
+        parsed_lines.append((current_speaker, ' '.join(current_text).strip()))
+
     return parsed_lines
 
 def text_to_speech(text, output_file, voice):
@@ -59,32 +73,59 @@ def combine_audio_files(audio_segments):
     return sum(audio_segments, AudioSegment.empty())
 
 def verify_voices(audio_files):
+    if not audio_files:
+        print("Error: No audio files were generated.")
+        return False
+
     host1_duration = sum(len(audio) for audio, host in audio_files if host == HOST_1_NAME)
     host2_duration = sum(len(audio) for audio, host in audio_files if host == HOST_2_NAME)
     total_duration = host1_duration + host2_duration
+
+    if total_duration == 0:
+        print("Error: Total audio duration is zero.")
+        return False
+
     host1_percentage = (host1_duration / total_duration) * 100
     host2_percentage = (host2_duration / total_duration) * 100
     print(f"{HOST_1_NAME} speaks for {host1_percentage:.2f}% of the time")
     print(f"{HOST_2_NAME} speaks for {host2_percentage:.2f}% of the time")
     return abs(host1_percentage - host2_percentage) < 20  # Allow 20% difference
 
+
 def generate_episode():
     topic = random.choice(PODCAST_TOPICS)
     content = generate_podcast_content(topic, EPISODE_DURATION_MINUTES, HOST_1_NAME, HOST_2_NAME)
     parsed_lines = parse_content(content, HOST_1_NAME, HOST_2_NAME)
 
+    # print(f"Generated content:\n{content}\n")
+    print(f"Parsed lines: {parsed_lines}\n")
+
     audio_files = []
     for i, (speaker, text) in enumerate(parsed_lines):
+        if not text.strip():
+            print(f"Warning: Empty text for speaker {speaker} at line {i+1}")
+            continue
+
         output_file = f"temp_audio_{i}.mp3"
         voice = "nova" if speaker == HOST_1_NAME else "echo"
-        text_to_speech(text, output_file, voice)
-        audio, duration = analyze_audio(output_file)
-        audio_files.append((add_pause(audio), speaker))
-        os.remove(output_file)
+        try:
+            text_to_speech(text, output_file, voice)
+            audio, duration = analyze_audio(output_file)
+            audio_files.append((add_pause(audio), speaker))
+            print(f"Generated audio for {speaker}: duration {duration}ms")
+        except Exception as e:
+            print(f"Error generating audio for line {i+1}: {e}")
+        finally:
+            if os.path.exists(output_file):
+                os.remove(output_file)
+
+    if not audio_files:
+        print("Error: No audio files were generated. Check the content and TTS process.")
+        return
 
     if not verify_voices(audio_files):
-        print("Voice distribution is uneven. Regenerating content...")
-        return generate_episode()  # Recursively try again
+        print("Voice distribution is uneven or no audio generated. Regenerating content...")
+        return generate_episode() 
 
     final_audio = combine_audio_files([audio for audio, _ in audio_files])
     
@@ -96,6 +137,7 @@ def generate_episode():
     output_filename = f"AI_Podcast_Episode_{topic.replace(' ', '_')}.mp3"
     final_audio.export(output_filename, format="mp3")
     print(f"Podcast episode generated and saved as {output_filename}")
+
 
 if __name__ == "__main__":
     generate_episode()

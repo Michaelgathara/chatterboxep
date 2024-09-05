@@ -1,4 +1,4 @@
-import random, os
+import random, os, shutil
 from pydub import AudioSegment
 from openai import OpenAI
 from config import OPENAI_API_KEY, PODCAST_TOPICS, EPISODE_DURATION_MINUTES, HOST_1_NAME, HOST_2_NAME
@@ -18,7 +18,7 @@ def generate_podcast_content(topic, duration_minutes, host1_name, host2_name):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that creates podcast scripts."},
+            {"role": "system", "content": "You are a helpful assistant that creates realistic sounding podcast scripts."},
             {"role": "user", "content": prompt}
         ],
         max_tokens=duration_minutes * 150,
@@ -57,30 +57,37 @@ def generate_episode():
     print(f"Generated content for topic: {topic}")
     print(content)
 
-    lines = content.split('\n')
-    host1_lines = [line.split(': ', 1)[1] for line in lines if line.startswith(f"{HOST_1_NAME}:") and len(line.split(': ', 1)) > 1]
-    host2_lines = [line.split(': ', 1)[1] for line in lines if line.startswith(f"{HOST_2_NAME}:") and len(line.split(': ', 1)) > 1]
-
     
-    if not host1_lines or not host2_lines:
-        print("Error: Failed to extract dialogue for both hosts. Check the generated content format.")
-        return
+    temp_folder = "temp_audio"
+    os.makedirs(temp_folder, exist_ok=True)
 
     try:
         
-        text_to_speech(' '.join(host1_lines), "host1_audio.mp3", "nova")  
-        text_to_speech(' '.join(host2_lines), "host2_audio.mp3", "echo")  
+        lines = content.split('\n')
+        audio_files = []
+
+        for i, line in enumerate(lines):
+            if ':' in line:
+                host, text = line.split(':', 1)
+                host = host.strip()
+                text = text.strip()
+
+                if text:  
+                    output_file = os.path.join(temp_folder, f"audio_{i}.mp3")
+                    voice = "nova" if host == HOST_1_NAME else "echo"
+                    text_to_speech(text, output_file, voice)
+                    audio_files.append(output_file)
 
         
-        combine_audio_files(["host1_audio.mp3", "host2_audio.mp3"], "episode_content.mp3")
+        combined_file = os.path.join(temp_folder, "combined_audio.mp3")
+        combine_audio_files(audio_files, combined_file)
 
         
-        if not (os.path.exists("intro.mp3") and os.path.exists("outro.mp3")):
-            print("Warning: intro.mp3 or outro.mp3 not found. Skipping intro/outro addition.")
-            final_podcast = AudioSegment.from_mp3("episode_content.mp3")
+        if os.path.exists("intro.mp3") and os.path.exists("outro.mp3"):
+            final_podcast = add_intro_outro(combined_file, "intro.mp3", "outro.mp3")
         else:
-            
-            final_podcast = add_intro_outro("episode_content.mp3", "intro.mp3", "outro.mp3")
+            print("Warning: intro.mp3 or outro.mp3 not found. Skipping intro/outro addition.")
+            final_podcast = AudioSegment.from_mp3(combined_file)
 
         
         output_filename = f"AI_Podcast_Episode_{topic.replace(' ', '_')}.mp3"
@@ -90,10 +97,14 @@ def generate_episode():
 
     except Exception as e:
         print(f"An error occurred while generating the podcast: {str(e)}")
-        
+        # Optionally, save the generated text content in case of audio generation failure
         with open(f"AI_Podcast_Episode_{topic.replace(' ', '_')}.txt", "w") as f:
             f.write(content)
         print(f"Podcast content saved as text in AI_Podcast_Episode_{topic.replace(' ', '_')}.txt")
+
+    finally:
+        # Clean up: remove the temporary folder and its contents
+        shutil.rmtree(temp_folder, ignore_errors=True)
 
 if __name__ == "__main__":
     generate_episode()

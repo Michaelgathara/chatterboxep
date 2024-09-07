@@ -18,7 +18,7 @@ def generate_podcast_content(topic, duration_minutes, host1_name, host2_name):
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant that creates realistic sounding podcast scripts."},
+            {"role": "system", "content": "You are a helpful assistant that creates realistic sounding podcast scripts with very light humor in them. Whenever you want to laugh use angle bracket like <laugh> or <giggle>."},
             {"role": "user", "content": prompt}
         ],
         max_tokens=duration_minutes * 150,
@@ -34,9 +34,10 @@ def parse_content(content, host1_name, host2_name):
     current_text = []
 
     for line in lines:
-        print(f"Host 1: {host1_name}")
-        print(f"Host 2: {host2_name}")
+        # print(f"Host 1: {host1_name}")
+        # print(f"Host 2: {host2_name}")
         if line.startswith(f"{host1_name}:") or line.startswith(f"{host2_name}:"):
+            print(f"Line: {line}")
             if current_speaker and current_text:
                 parsed_lines.append((current_speaker, ' '.join(current_text).strip()))
                 current_text = []

@@ -7,7 +7,7 @@ OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
 ANTHROPIC_KEY = os.getenv('ANTHROPIC_KEY')
 
 PODCAST_TOPICS = [
-    "Debate about whether AI will take over all of humanity"
+    "A debate on whether AI will be good for humanity or not"
 ]
 
 

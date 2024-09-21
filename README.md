@@ -45,3 +45,14 @@ MODEL = 1 # 0 is OpenAI and 1 is Claude
 ## Run the program
 `python3 main.py`
 * This will create an mp3 file based on a random topic in your topic list. 
+
+### Common errors:
+There is a slight chance when you run the program you are greeted with:
+```
+Parsed lines: []
+
+Error: No audio files were generated. Check the content and TTS process.
+```
+There are two things to try:
+* Re-run the program
+* Change your podcast topics, there might be one that is not working well

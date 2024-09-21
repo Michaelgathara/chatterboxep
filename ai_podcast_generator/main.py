@@ -8,6 +8,7 @@ from config import (
     EPISODE_DURATION_MINUTES,
     HOST_1_NAME,
     HOST_2_NAME,
+    MODEL,
 )
 from anthropic import Anthropic
 
@@ -178,7 +179,7 @@ def generate_episode(model: int):
         print(
             "Voice distribution is uneven or no audio generated. Regenerating content..."
         )
-        return generate_episode(model = model)
+        return generate_episode(model = MODEL)
 
     final_audio = combine_audio_files([audio for audio, _ in audio_files])
 
@@ -193,4 +194,4 @@ def generate_episode(model: int):
 
 
 if __name__ == "__main__":
-    generate_episode(model = 1)
+    generate_episode(model = MODEL)

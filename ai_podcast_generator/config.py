@@ -24,4 +24,6 @@ PODCAST_TOPICS = [
 EPISODE_DURATION_MINUTES = 15
 HOST_1_NAME = "Alice"
 HOST_2_NAME = "Bob"
-MODEL = 1 # 0 is OpenAI and 1 is Claude
+OPEN_AI_MODEL= "gpt-4o-mini"
+CLAUDE_MODEL = "claude-2.1"
+USER_CHOICE_MODEL = 1 # 0 is OpenAI and 1 is Claude

@@ -8,7 +8,9 @@ from config import (
     EPISODE_DURATION_MINUTES,
     HOST_1_NAME,
     HOST_2_NAME,
-    MODEL,
+    OPEN_AI_MODEL,
+    CLAUDE_MODEL,
+    USER_CHOICE_MODEL,
 )
 from anthropic import Anthropic
 
@@ -27,7 +29,7 @@ def generate_podcast_content_open_ai(topic, duration_minutes, host1_name, host2_
     Repeat this pattern for the entire conversation."""
 
     response = open_ai_client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=OPEN_AI_MODEL,
         messages=[
             {
                 "role": "system",
@@ -54,7 +56,7 @@ def generate_podcast_content_claude(topic, duration_minutes, host1_name, host2_n
     Repeat this pattern for the entire conversation. Include occasional light humor and laughter indications using [laugh], [giggle], or [wheeze]."""
 
     response = anthropic_client.completions.create(
-        model = "claude-2.1",
+        model = CLAUDE_MODEL,
         max_tokens_to_sample = duration_minutes * 150,
         temperature = 0.7,
         prompt = f"{prompt}\n\nHuman: Please generate the podcast script as described above.\n\nAssistant:",
@@ -179,7 +181,7 @@ def generate_episode(model: int):
         print(
             "Voice distribution is uneven or no audio generated. Regenerating content..."
         )
-        return generate_episode(model = MODEL)
+        return generate_episode(model = USER_CHOICE_MODEL)
 
     final_audio = combine_audio_files([audio for audio, _ in audio_files])
 
@@ -194,4 +196,4 @@ def generate_episode(model: int):
 
 
 if __name__ == "__main__":
-    generate_episode(model = MODEL)
+    generate_episode(model = USER_CHOICE_MODEL)

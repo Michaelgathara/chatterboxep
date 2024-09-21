@@ -38,6 +38,9 @@ OPEN_AI_MODEL= "gpt-4o-mini" # your choice of the open_ai model
 CLAUDE_MODEL = "claude-2.1" # your choice of the claude model 
 MODEL = 1 # 0 is OpenAI and 1 is Claude
 ```
+* OpenAI models can be found: https://platform.openai.com/docs/models
+* Claude models can be found: https://docs.anthropic.com/en/docs/about-claude/models
+
 
 ## Run the program
 `python3 main.py`

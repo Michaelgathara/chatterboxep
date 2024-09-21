@@ -91,7 +91,7 @@ def parse_content(content, host1_name, host2_name):
 
 def text_to_speech(text, output_file, voice):
     response = open_ai_client.audio.speech.create(
-        model = "tts-1", voice=voice, input=text
+        model = "tts-1-hd", voice=voice, input=text
     )
     with open(output_file, "wb") as f:
         for chunk in response.iter_bytes():

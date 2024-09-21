@@ -34,6 +34,8 @@ PODCAST_TOPICS = [
 EPISODE_DURATION_MINUTES = 15 # not precise
 HOST_1_NAME = "Alice" # name of the first host, default female voice
 HOST_2_NAME = "Bob" # name of the first host, default male voice
+OPEN_AI_MODEL= "gpt-4o-mini" # your choice of the open_ai model
+CLAUDE_MODEL = "claude-2.1" # your choice of the claude model 
 MODEL = 1 # 0 is OpenAI and 1 is Claude
 ```
 

@@ -1,7 +1,7 @@
 # chatterboxep
 
 A python program that generates mp3 clips of AI podcasts. 
-
+An example: https://youtu.be/fOhAgOvOd0w?si=Jux1-3GCAvFfHRPg
 ## Pre-Reqs:
 OPENAI API KEY from https://playground.openai.com
 

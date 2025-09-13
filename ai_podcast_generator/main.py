@@ -7,59 +7,48 @@ from config import (
     PODCAST_TOPICS,
     EPISODE_DURATION_MINUTES,
     HOST_1_NAME,
+    HOST_1_VOICE,
     HOST_2_NAME,
+    HOST_2_VOICE,
     OPEN_AI_MODEL,
     CLAUDE_MODEL,
     USER_CHOICE_MODEL,
 )
+from prompts import Prompts
 from anthropic import Anthropic
 
 open_ai_client = OpenAI(api_key=OPENAI_API_KEY)
 anthropic_client = Anthropic(api_key=ANTHROPIC_KEY)
 
+topic = random.choice(PODCAST_TOPICS)
+prompt_engine = Prompts(topic, EPISODE_DURATION_MINUTES, HOST_1_NAME, HOST_2_NAME)
+user_prompt = prompt_engine.get_podcast_prompt()
+system_prompt = prompt_engine.get_system_role()
 
-def generate_podcast_content_open_ai(topic, duration_minutes, host1_name, host2_name):
-    prompt = f"""Create a {duration_minutes}-minute podcast script about {topic}. 
-    The podcast should be a conversation between two hosts: {host1_name} (female) and {host2_name} (male).
-    Include an introduction, main content, and conclusion. Format the script as follows:
-
-    {host1_name}: [Host 1's dialogue]
-    {host2_name}: [Host 2's dialogue]
-    
-    Repeat this pattern for the entire conversation."""
-
+def generate_podcast_content_open_ai():
     response = open_ai_client.chat.completions.create(
         model=OPEN_AI_MODEL,
         messages=[
             {
                 "role": "system",
-                "content": "You are a helpful assistant that creates realistic sounding podcast scripts and include occasional light humor and laughter indications using [laugh], [giggle], or [wheeze].",
+                "content": system_prompt,
             },
             # https://github.com/YuanGongND/whisper-at/issues/7
-            {"role": "user", "content": prompt},
+            {"role": "user", "content": user_prompt},
         ],
-        max_tokens = duration_minutes * 150,
+        max_tokens = EPISODE_DURATION_MINUTES * 150,
         n = 1,
         temperature = 0.7,
     )
     return response.choices[0].message.content.strip()
 
 
-def generate_podcast_content_claude(topic, duration_minutes, host1_name, host2_name):
-    prompt = f"""Create a {duration_minutes}-minute podcast script about {topic}. 
-    The podcast should be a conversation between two hosts: {host1_name} (female) and {host2_name} (male).
-    Include an introduction, main content, and conclusion. Format the script as follows:
-
-    {host1_name}: [Host 1's dialogue]
-    {host2_name}: [Host 2's dialogue]
-    
-    Repeat this pattern for the entire conversation. Include occasional light humor and laughter indications using [laugh], [giggle], or [wheeze]."""
-
+def generate_podcast_content_claude():
     response = anthropic_client.completions.create(
         model = CLAUDE_MODEL,
-        max_tokens_to_sample = duration_minutes * 150,
+        max_tokens_to_sample = EPISODE_DURATION_MINUTES * 150,
         temperature = 0.7,
-        prompt = f"{prompt}\n\nHuman: Please generate the podcast script as described above.\n\nAssistant:",
+        prompt = f"{user_prompt}\n\nHuman: Please generate the podcast script as described above.\n\nAssistant:",
     )
     return response.completion.strip()
 
@@ -140,13 +129,9 @@ def verify_voices(audio_files):
 def generate_episode(model: int):
     topic = random.choice(PODCAST_TOPICS)
     if model == 0:
-        content = generate_podcast_content_open_ai(
-            topic, EPISODE_DURATION_MINUTES, HOST_1_NAME, HOST_2_NAME
-        )
+        content = generate_podcast_content_open_ai()
     if model == 1:
-        content = generate_podcast_content_claude(
-            topic, EPISODE_DURATION_MINUTES, HOST_1_NAME, HOST_2_NAME
-        )
+        content = generate_podcast_content_claude()
     parsed_lines = parse_content(content, HOST_1_NAME, HOST_2_NAME)
 
     # print(f"Generated content:\n{content}\n")
@@ -159,7 +144,7 @@ def generate_episode(model: int):
             continue
 
         output_file = f"temp_audio_{i}.mp3"
-        voice = "nova" if speaker == HOST_1_NAME else "echo"
+        voice = HOST_1_VOICE if speaker == HOST_1_NAME else HOST_2_VOICE
         try:
             text_to_speech(text, output_file, voice)
             audio, duration = analyze_audio(output_file)

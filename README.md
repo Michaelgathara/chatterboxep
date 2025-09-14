@@ -1,18 +1,11 @@
 # chatterboxep
 
-<<<<<<< HEAD
 Generate two‑host AI podcast episodes and export them as MP3.
 
 ## Pre‑reqs
 - OpenAI API key (for script + TTS). Get one from [OpenAI](https://platform.openai.com/).
 - Optional: Anthropic API key (for script via Claude). Get one from [Anthropic](https://www.anthropic.com/api).
 - ffmpeg installed and on your PATH (required by `pydub` for MP3 I/O).
-=======
-A python program that generates mp3 clips of AI podcasts. 
-An example: https://youtu.be/fOhAgOvOd0w?si=Jux1-3GCAvFfHRPg
-## Pre-Reqs:
-OPENAI API KEY from https://playground.openai.com
->>>>>>> 5f4ce2bd0fccb33e83a87bf43411707d3bfd6554
 
 ## Setup
 ```bash

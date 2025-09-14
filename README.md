@@ -17,7 +17,7 @@ Create an `.env` file inside `ai_podcast_generator/`:
 ```bash
 # ai_podcast_generator/.env
 OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_KEY=your_anthropic_api_key   # optional if using Claude
+ANTHROPIC_KEY=your_anthropic_api_key   # optional if using OpenAI
 ```
 
 ## Configure

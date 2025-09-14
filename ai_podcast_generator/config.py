@@ -20,5 +20,6 @@ HOST_2_NAME = "Bob"
 HOST_2_VOICE = "echo"
 
 USER_CHOICE_MODEL = 0 # 0 is OpenAI and 1 is Claude
-OPEN_AI_MODEL= "gpt-5-nano"
+OPEN_AI_MODEL= "gpt-5-mini"
 CLAUDE_MODEL = "claude-3-5-sonnet-latest"
+VOICE_MODEL = "tts-1-hd"

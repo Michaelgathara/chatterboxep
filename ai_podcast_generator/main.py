@@ -12,6 +12,7 @@ from config import (
     HOST_2_VOICE,
     OPEN_AI_MODEL,
     CLAUDE_MODEL,
+    VOICE_MODEL,
     USER_CHOICE_MODEL,
 )
 from prompts import Prompts
@@ -26,21 +27,15 @@ user_prompt = prompt_engine.get_podcast_prompt()
 system_prompt = prompt_engine.get_system_role()
 
 def generate_podcast_content_open_ai():
-    response = open_ai_client.chat.completions.create(
+    max_out = min(EPISODE_DURATION_MINUTES * 150, 8192)
+    response = open_ai_client.responses.create(
         model=OPEN_AI_MODEL,
-        messages=[
-            {
-                "role": "system",
-                "content": system_prompt,
-            },
-            # https://github.com/YuanGongND/whisper-at/issues/7
-            {"role": "user", "content": user_prompt},
-        ],
-        max_tokens = EPISODE_DURATION_MINUTES * 150,
-        n = 1,
-        temperature = 0.7,
+        instructions=system_prompt,
+        input=user_prompt
     )
-    return response.choices[0].message.content.strip()
+    content = response.output_text.strip()
+    print(f"Response: {content}")
+    return content
 
 
 def generate_podcast_content_claude():
@@ -79,12 +74,10 @@ def parse_content(content, host1_name, host2_name):
 
 
 def text_to_speech(text, output_file, voice):
-    response = open_ai_client.audio.speech.create(
-        model = "tts-1-hd", voice=voice, input=text
-    )
-    with open(output_file, "wb") as f:
-        for chunk in response.iter_bytes():
-            f.write(chunk)
+    with open_ai_client.audio.speech.with_streaming_response.create(
+        model=VOICE_MODEL, voice=voice, input=text
+    ) as resp:
+        resp.stream_to_file(output_file)
 
 
 def analyze_audio(file_path):

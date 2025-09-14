@@ -7,14 +7,28 @@ class Prompts:
         
     def get_podcast_prompt(self):
         return\
-            f"""Create a {self.duration}-minute podcast script about {self.topic}. 
-                The podcast should be a conversation between two hosts: {self.host1_name} (female) and {self.host2_name} (male).
-                Include an introduction, main content, and conclusion. Format the script as follows:
+            f"""Create a {self.duration}-minute podcast conversation about: {self.topic}
 
-                {self.host1_name}: [Host 1's dialogue]
-                {self.host2_name}: [Host 2's dialogue]
-    
-                Repeat this pattern for the entire conversation."""
+            Hosts:
+            - {self.host1_name} (female)
+            - {self.host2_name} (male)
+
+            Constraints:
+            - Output ONLY dialogue lines in this exact format:
+            {self.host1_name}: ...
+            {self.host2_name}: ...
+            - Alternate speakers every line; no other speakers.
+            - No headings, narrator lines, stage directions, or meta text.
+            - Do NOT use bracketed tags like [laugh]; use natural interjections (e.g., ha!, hehe) if needed.
+            - Do NOT include colons in the dialogue content (only after the speaker name).
+            - Keep sentences short and conversational. Prefer 20-35 words per line.
+            - Begin immediately with the first line by {self.host1_name}.
+
+            Pacing targets (approximate):
+            - Total words: ~{int(self.duration * 160)}
+            - Total lines: ~{int(self.duration * 160 / 30)}
+            - Keep speaking time roughly balanced between hosts.
+            """
     
     def get_system_role(self):
         return f""""You write realistic, broadcast-quality podcast dialogue between two hosts. Output must be ONLY a sequence of dialogue lines, each starting with the speaker name followed by a colon and a space, e.g.:
